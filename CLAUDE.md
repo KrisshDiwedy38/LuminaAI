@@ -24,6 +24,8 @@ Planned stack: Python/FastAPI, PyTorch + HF Transformers, CrewAI, Gemini, Chroma
 
 - The rule-based safety gate must work **independently of the ML model** (model down/uncertain ≠ unsafe pass-through). ML risk is an input to the safety decision, never the only one.
 - CRITICAL must short-circuit: no memory lookup, no Gemini call, no Gen-Z tone on crisis wording. Crisis text is fixed, not generated.
+- The safety gate reads context, not just the current message: vague wishes ("i wanna feel that") after recent talk of death are CRITICAL.
+- Helpline numbers and sites come only from `CRISIS_RESOURCES` (India only). Gemini output is filtered by `strip_unverified_numbers`; it once invented 988 (US).
 - Safety false negatives (actual CRITICAL → predicted SAFE) are the metric that matters most; track critical recall separately from accuracy.
 - Every safety rule change needs a test case in `tests/test_safety_rules.py`.
 - Never claim diagnosis, treatment, therapist replacement, or HIPAA compliance. Wording: "HIPAA-inspired data minimization principles". Keep the visible "not a replacement for professional care / emergency services" disclaimer.

@@ -111,6 +111,25 @@ def test_prompt_after_crisis_drops_slang(monkeypatch):
     assert lumina.llm.GENZ in seen["system"] and lumina.llm.AFTER_CRISIS not in seen["system"]
 
 
+def test_follow_up_after_death_question_goes_to_crisis(monkeypatch):
+    # the exact conversation that slipped through as SAFE
+    monkeypatch.setattr(lumina, "memory", Forbidden())
+    monkeypatch.setattr(lumina, "llm", Forbidden())
+    for t in ["i am scared of death", "how does dying feel ?"]:
+        lumina.q("INSERT INTO messages (session_id, role, text, analysis) VALUES (1, 'user', ?, ?)",
+                 t, json.dumps({"level": "safe"}))
+    reply, a = lumina.run_pipeline(1, "i wanna feel that", genz=False)
+    assert a["level"] == safety.CRITICAL and reply == safety.CRISIS_MESSAGE
+
+
+def test_made_up_helpline_is_removed_and_verified_ones_attached(monkeypatch):
+    monkeypatch.setattr(lumina, "memory", Recorder(search=[]))
+    monkeypatch.setattr(lumina, "llm", Recorder(
+        reply="That worries me. Please call or text 988 if you are in the US. You don't have to carry this alone."))
+    reply, a = lumina.run_pipeline(1, "what does death feel like", genz=False)
+    assert "988" not in reply and a["stripped"] and a["support"] and a["level"] == safety.CAUTION
+
+
 def test_gemini_failure_falls_back(monkeypatch):
     monkeypatch.setattr(lumina, "memory", Recorder(search=[]))
     monkeypatch.setattr(lumina.llm, "reply", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("429")))

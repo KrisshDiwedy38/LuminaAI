@@ -37,6 +37,10 @@ CRITICAL_PHRASES = [
     "(jump|jumping) (off|from) (a|the|this) (bridge|building|roof|cliff)",
     "(jump|step|jumping|stepping) in front of (a|the) (train|car|bus|truck)",
     "say goodbye to everyone", "(wrote|writing) (a|my) (suicide |goodbye )?note",
+    # asking for a method
+    "(easiest|easy|painless|quickest|quick|fastest|best|simplest) way to (die|kill myself|end it|end my life)",
+    "how (to|do i|can i|could i|should i) (die|kill myself|end it|end my life)",
+    "how many pills",
 ]
 
 CAUTION_PHRASES = [
@@ -50,7 +54,23 @@ CAUTION_PHRASES = [
     " (hits|hit|hurts|hurt|abuses|abused|beats|beat) me", "not safe at home",
     # harm to others: often hyperbole ("i want to kill him lol"), so CAUTION and the reply checks in
     f"{_I}{_WANT} (kill|hurt|shoot|stab) (him|her|them|someone|somebody|people|everyone)",
+    # curiosity about dying: not intent, but worth a gentle check-in
+    "how (does|would|do|will) (dying|death|it) feel( like)?( to die)?",
+    "what (does|is|would) (dying|death|it) (feel )?like( to die)?", "what happens (when|after) (you|i|we|people|u) die",
+    "(thinking|think|thought|thoughts) (about|of) (death|dying|being dead)",
 ]
+
+# A vague wish ("i wanna feel that") is only as safe as what "that" refers to. Within the last few
+# user messages, talk of death or dying turns it into CRITICAL.
+FOLLOW_UP_PHRASES = [
+    f"{_I}({_WANT}|wish|would like|d like|wanna)( to)? (feel|do|try|experience|have|go through) (that|it|this)",
+    f"{_I}(want|wanna|wish for|need) (that|it|this)( too)?",
+    "(that|it|this) (sounds|would be|seems|feels|must be|must feel) (so )?(nice|peaceful|good|better|nicer|easier|like a relief|freeing)",
+    "(i )?wish (that|it) (was|were) me",
+]
+DEATH_TOPIC_WORDS = ["die", "died", "dying", "death", "dead", "suicide", "suicidal", "kill myself", "end my life",
+                     "end it", "overdose", "not wake up"]
+RECENT_MESSAGES = 3  # how far back a follow-up looks
 
 # Fuzzy single-word misspellings ("sucide", "suicdal"). Only words this long are checked.
 FUZZY_CRITICAL = ["suicide", "suicidal", "overdose"]
@@ -85,6 +105,8 @@ def _compile(phrase):
 _CRIT = [(p, _compile(p)) for p in CRITICAL_PHRASES]
 _CAUT = [(p, _compile(p)) for p in CAUTION_PHRASES]
 _NEG = [_compile(p) for p in NEGATED_PHRASES]
+_FOLLOW = [_compile(p) for p in FOLLOW_UP_PHRASES]
+_DEATH = [_compile(p) for p in DEATH_TOPIC_WORDS]
 
 
 def normalize(text):
@@ -97,8 +119,9 @@ def normalize(text):
     return re.sub(r"\s+", " ", text).strip()
 
 
-def check(text):
-    """Return {"level": safe|caution|critical, "matches": [phrases that fired]}."""
+def check(text, recent=()):
+    """Return {"level": safe|caution|critical, "matches": [phrases that fired]}.
+    recent: the user's previous messages in this session, newest first."""
     norm = normalize(text)
     matches, level = [], SAFE
 
@@ -112,6 +135,12 @@ def check(text):
     crit = [m.group().strip() for _, rx in _CRIT if (m := rx.search(norm))]
     crit += [f"{w} (spelled like {k})" for w in norm.split() if len(w) >= FUZZY_MIN_LEN
              for k in FUZZY_CRITICAL if difflib.SequenceMatcher(None, w, k).ratio() >= FUZZY_RATIO]
+    follow = next((m.group().strip() for rx in _FOLLOW if (m := rx.search(norm))), None)
+    if not crit and follow:
+        topic = next((r for r in list(recent)[:RECENT_MESSAGES]
+                      if any(rx.search(normalize(r)) for rx in _DEATH)), None)
+        if topic:
+            crit = [f"{follow} (right after: “{topic[:60]}”)"]
     if crit:
         return {"level": CRITICAL, "matches": matches + crit}
 
@@ -141,3 +170,24 @@ CRISIS_RESOURCES = [
     {"name": "Tele-MANAS mental health helpline", "numbers": ["14416", "1-800-891-4416"],
      "detail": "Free, 24/7 counselling in multiple languages.", "url": "https://telemanas.mohfw.gov.in"},
 ]
+
+# Gemini must never be the source of a contact number or site: it once offered 988 (US) to a user in India.
+VERIFIED_NUMBERS = {re.sub(r"\D", "", n) for r in CRISIS_RESOURCES for n in r["numbers"]}
+VERIFIED_SITES = {r["url"].split("//")[1] for r in CRISIS_RESOURCES if r.get("url")}
+_NUMBER = re.compile(r"\+?\d[\d -]*\d(?!\s*%)")
+_SITE = re.compile(r"\b(?:[\w-]+\.)+(?:com|org|net|in|gov|info|co|uk|us)\b", re.I)
+_SAFETY_TALK = re.compile(r"\b(helplines?|hotlines?|crisis|lifeline|emergency|are you safe|safe right now|"
+                          r"stay safe|keep (?:yourself )?safe)\b", re.I)
+
+
+def strip_unverified_numbers(reply):
+    """Drop every sentence carrying a phone number (3+ digit run) or website that isn't a verified helpline."""
+    def unverified(s):
+        return (any(re.search(r"\d{3}", n) and re.sub(r"\D", "", n) not in VERIFIED_NUMBERS for n in _NUMBER.findall(s))
+                or any(site.lower() not in VERIFIED_SITES for site in _SITE.findall(s)))
+    return " ".join(s for s in re.split(r"(?<=[.!?])\s+", reply.strip()) if not unverified(s))
+
+
+def needs_support(level, reply):
+    """Attach the verified helplines to a non-crisis reply on CAUTION, or when the reply itself talks safety."""
+    return level == CAUTION or bool(_SAFETY_TALK.search(reply))

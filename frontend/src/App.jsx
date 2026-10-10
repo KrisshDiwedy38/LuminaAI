@@ -156,7 +156,7 @@ export default function App() {
       setMessages((m) => [
         ...m.slice(0, -1),
         { role: "user", text, analysis: res.analysis },
-        { role: "assistant", text: res.reply, analysis: res.analysis, resources: res.resources },
+        { role: "assistant", text: res.reply, analysis: res.analysis, resources: res.resources, support: res.support },
       ]);
       if (inspectorOpen) setSelIdx(messages.length + 1); // index of the reply just added
     } catch (e) {
@@ -371,6 +371,7 @@ export default function App() {
                       <Orb size={20} style={{ marginTop: 6 }} />
                       <div className="flex min-w-0 flex-1 flex-col gap-2.5">
                         <p className={serifBody}>{m.text}</p>
+                        {m.support && <SupportStrip resources={m.support} />}
                         {meta}
                       </div>
                     </div>
@@ -602,6 +603,27 @@ function CrisisCard({ text, resources }) {
   );
 }
 
+function SupportStrip({ resources }) {
+  return (
+    <aside aria-label="Verified helplines" className="flex flex-col gap-1.5 border-l-2 border-crisis-line py-1 pl-3.5">
+      <span className="text-[13px] text-muted">If you want to talk to someone right now:</span>
+      {resources.map((r) => (
+        <span key={r.name} className="flex flex-wrap items-baseline gap-x-2 text-sm text-body">
+          <span className="font-semibold text-ink">{r.name}</span>
+          {r.numbers.map((n, j) => (
+            <Fragment key={n}>
+              {j > 0 && <span className="text-muted">or</span>}
+              <a href={`tel:${n.replace(/[^\d+]/g, "")}`} className="font-semibold tabular-nums underline underline-offset-2">
+                {n}
+              </a>
+            </Fragment>
+          ))}
+        </span>
+      ))}
+    </aside>
+  );
+}
+
 function Step({ n, title, last, children }) {
   return (
     <li className="grid grid-cols-[28px_minmax(0,1fr)] gap-x-3.5">
@@ -684,6 +706,14 @@ function Pipeline({ analysis, userText, points, selIdx, mlTrained }) {
         </Step>
         <Step n={5} title="Reply" last>
           <p className={`m-0 text-pretty ${small}`}>{REPLY_SOURCE[source(analysis)]}</p>
+          {analysis.stripped && (
+            <p className={`m-0 text-pretty ${small}`}>
+              Removed a phone number or website Gemini wrote itself. Only verified helplines are shown.
+            </p>
+          )}
+          {analysis.support && (
+            <p className={`m-0 text-pretty ${small}`}>Verified helplines were attached below the reply.</p>
+          )}
         </Step>
       </ol>
       <div className="mt-7 border-t border-line pt-5">

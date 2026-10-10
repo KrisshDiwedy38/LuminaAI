@@ -78,7 +78,9 @@ def history_for_llm(sid, limit=12):
 
 
 def run_pipeline(sid, text, genz):
-    rule = safety.check(text)
+    recent = q("SELECT text, analysis FROM messages WHERE session_id = ? AND role = 'user' ORDER BY id DESC LIMIT ?",
+               sid, safety.RECENT_MESSAGES)
+    rule = safety.check(text, [r["text"] for r in recent])
     signals = None
     if analyzer:
         try:
@@ -92,8 +94,7 @@ def run_pipeline(sid, text, genz):
         analysis["llm"] = "skipped"
         return safety.CRISIS_MESSAGE, analysis
 
-    last = q("SELECT analysis FROM messages WHERE session_id = ? AND role = 'user' ORDER BY id DESC LIMIT 1", sid)
-    analysis["after_crisis"] = bool(last) and json.loads(last[0]["analysis"] or "{}").get("level") == safety.CRITICAL
+    analysis["after_crisis"] = bool(recent) and json.loads(recent[0]["analysis"] or "{}").get("level") == safety.CRITICAL
     try:
         analysis["memory"] = memory.search(text, exclude_session=sid)
     except Exception:
@@ -105,6 +106,10 @@ def run_pipeline(sid, text, genz):
     except Exception as e:
         print(f"[lumina] Gemini failed: {e}")
         reply, analysis["llm"] = llm.FALLBACK, "unavailable"
+    cleaned = safety.strip_unverified_numbers(reply)
+    analysis["stripped"] = cleaned != reply.strip()
+    reply = cleaned or llm.FALLBACK
+    analysis["support"] = safety.needs_support(level, reply)
     return reply, analysis
 
 
@@ -141,6 +146,8 @@ def list_messages(sid: int):
         r["analysis"] = json.loads(r["analysis"] or "null")
         if r["role"] == "assistant" and r["analysis"] and r["analysis"]["level"] == safety.CRITICAL:
             r["resources"] = safety.CRISIS_RESOURCES
+        elif r["role"] == "assistant" and r["analysis"] and r["analysis"].get("support"):
+            r["support"] = safety.CRISIS_RESOURCES
     return rows
 
 
@@ -158,6 +165,8 @@ def send_message(sid: int, msg: Message):
     out = {"reply": reply, "analysis": analysis}
     if analysis["level"] == safety.CRITICAL:
         out["resources"] = safety.CRISIS_RESOURCES
+    elif analysis.get("support"):
+        out["support"] = safety.CRISIS_RESOURCES
     return out
 
 
