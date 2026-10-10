@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.env
+node_modules/
+frontend/dist/
+models/
+data/*
+!data/example.csv
