@@ -1,0 +1,31 @@
+text,emotion,intensity,risk
+"I'm having a great day!",joy,0.3,safe
+"Finally finished my project, feeling proud",joy,0.5,safe
+"Hung out with friends, it was nice",joy,0.35,safe
+"Not much going on today",neutral,0.1,safe
+"Just made some tea and chilling",neutral,0.1,safe
+"My exams are stressing me out",anxiety,0.6,safe
+"I have a presentation tomorrow and I'm nervous",anxiety,0.55,safe
+"Work has been a lot this week",stress,0.5,safe
+"So many deadlines, I'm overwhelmed",stress,0.65,safe
+"My roommate keeps eating my food and I'm annoyed",anger,0.45,safe
+"I feel completely hopeless",sadness,0.85,caution
+"I can't do this anymore, everything is too much",stress,0.9,caution
+"Nobody would even notice if I disappeared",sadness,0.88,caution
+"I'm so tired of everything",sadness,0.75,caution
+"I've had three panic attacks this week",anxiety,0.85,caution
+"I feel empty all the time",sadness,0.8,caution
+"I hate myself so much",sadness,0.85,caution
+"I haven't slept or eaten properly in days",stress,0.8,caution
+"I'm a burden to everyone around me",sadness,0.86,caution
+"I'm so angry I want to break something",anger,0.8,caution
+"I want to kill myself",sadness,1.0,critical
+"I don't want to be alive anymore",sadness,0.97,critical
+"I've been thinking about ending my life",sadness,0.98,critical
+"Everyone would be better off without me",sadness,0.95,critical
+"I've been cutting myself again",sadness,0.95,critical
+"I have the pills ready",fear,1.0,critical
+"Tonight is the night I end it",sadness,1.0,critical
+"I wrote a goodbye note",sadness,1.0,critical
+"There's no reason for me to live",sadness,0.96,critical
+"I just want it all to stop forever",sadness,0.95,critical
