@@ -7,3 +7,4 @@ frontend/dist/
 models/
 data/*
 !data/example.csv
+CLAUDE.md
