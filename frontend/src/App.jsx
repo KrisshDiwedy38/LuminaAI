@@ -687,7 +687,9 @@ function Pipeline({ analysis, userText, points, selIdx, mlTrained }) {
           <p className={`m-0 text-pretty ${small}`}>
             {crisis
               ? "Critical goes straight to the crisis path. The AI is skipped and fixed helpline text is shown."
-              : "The stricter of the rules and the model decides. The model can raise the level, never lower it."}
+              : ml?.risk === "critical" && level !== "critical"
+                ? "The model alone wasn't sure enough (needs 85%) to treat this as a crisis, so Lumina checks in gently and shows helplines instead."
+                : "The stricter of the rules and the model decides. The model can raise the level, never lower it."}
           </p>
         </Step>
         <Step n={4} title="Memory">

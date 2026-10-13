@@ -150,9 +150,17 @@ def check(text, recent=()):
     return {"level": level, "matches": matches + caut}
 
 
-def decide(rule_level, ml_risk=None):
+# The model alone needs this confidence to send a message to the crisis path. Below it, a model-only
+# CRITICAL becomes CAUTION (check-in + helplines), never SAFE. The first trained model called
+# "i am okay" and "thanks" critical at ~0.73; clear crisis wording scores 0.95.
+ML_CRITICAL_MIN = 0.85
+
+
+def decide(rule_level, ml_risk=None, ml_confidence=1.0):
     """Final safety level: the stricter of the rule gate and the ML risk head.
     ML can only escalate, never downgrade a rule hit; a missing model changes nothing."""
+    if ml_risk == CRITICAL and ml_confidence < ML_CRITICAL_MIN:
+        ml_risk = CAUTION
     levels = [rule_level] + ([ml_risk] if ml_risk in SEVERITY else [])
     return max(levels, key=SEVERITY.get)
 

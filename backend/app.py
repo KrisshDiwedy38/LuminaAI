@@ -87,7 +87,7 @@ def run_pipeline(sid, text, genz):
             signals = analyzer.predict(text)
         except Exception:  # a model failure must never block the rule gate
             traceback.print_exc()
-    level = safety.decide(rule["level"], signals and signals["risk"])
+    level = safety.decide(rule["level"], signals and signals["risk"], signals["risk_confidence"] if signals else 1.0)
     analysis = {"rule": rule, "ml": signals, "level": level, "memory": [], "llm": None}
 
     if level == safety.CRITICAL:  # short-circuit: no memory, no Gemini, fixed wording

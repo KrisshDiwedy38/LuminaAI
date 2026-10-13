@@ -155,3 +155,11 @@ def test_decide_takes_the_stricter_level():
     assert decide(SAFE, CRITICAL) == CRITICAL  # ML can escalate
     assert decide(CRITICAL, SAFE) == CRITICAL  # ML can never downgrade a rule hit
     assert decide(CAUTION, SAFE) == CAUTION
+
+
+def test_unsure_model_alone_cannot_trigger_crisis():
+    # first trained model: "i am okay" -> critical 0.73
+    assert decide(SAFE, CRITICAL, 0.73) == CAUTION  # check-in + helplines, never SAFE
+    assert decide(SAFE, CRITICAL, 0.95) == CRITICAL  # confident model still escalates alone
+    assert decide(CRITICAL, CRITICAL, 0.5) == CRITICAL  # a rule hit never needs the model
+    assert decide(CRITICAL, SAFE, 0.99) == CRITICAL

@@ -26,13 +26,14 @@ class Recorder:
 
 
 class FakeModel:
-    def __init__(self, risk="safe", crash=False):
-        self.risk, self.crash = risk, crash
+    def __init__(self, risk="safe", crash=False, confidence=0.95):
+        self.risk, self.crash, self.confidence = risk, crash, confidence
 
     def predict(self, text):
         if self.crash:
             raise RuntimeError("model down")
-        return {"emotion": "sadness", "emotion_confidence": 0.9, "intensity": 0.7, "risk": self.risk, "risk_confidence": 0.8}
+        return {"emotion": "sadness", "emotion_confidence": 0.9, "intensity": 0.7, "risk": self.risk,
+                "risk_confidence": self.confidence}
 
 
 @pytest.fixture(autouse=True)
@@ -57,6 +58,14 @@ def test_ml_can_escalate_to_critical(monkeypatch):
     reply, a = lumina.run_pipeline(1, "i just feel like a ghost lately", genz=False)
     assert a["rule"]["level"] == safety.SAFE and a["level"] == safety.CRITICAL
     assert reply == safety.CRISIS_MESSAGE
+
+
+def test_unsure_ml_critical_becomes_caution_check_in(monkeypatch):
+    monkeypatch.setattr(lumina, "analyzer", FakeModel(risk="critical", confidence=0.73))
+    monkeypatch.setattr(lumina, "memory", Recorder(search=[]))
+    monkeypatch.setattr(lumina, "llm", Recorder(reply="Glad to hear it. How's the rest of your day?"))
+    reply, a = lumina.run_pipeline(1, "i am okay", genz=False)
+    assert a["level"] == safety.CAUTION and reply != safety.CRISIS_MESSAGE and a["support"]
 
 
 def test_ml_cannot_downgrade_rule_gate(monkeypatch):
