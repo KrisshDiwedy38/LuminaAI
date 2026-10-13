@@ -136,9 +136,53 @@
   40% { opacity: 1; }
 }
 
+/* "Under the hood" flowchart: a pulse runs down the spine, lighting each step in turn (1.1s apart, 8s loop),
+   and the crisis branch flashes as the safety decision lights. */
+.flow-node {
+  animation: lumFlowNode 8s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 1.1s);
+}
+@keyframes lumFlowNode {
+  0%, 15%, 100% {
+    background: color-mix(in oklch, var(--primary) 12%, transparent);
+    color: var(--primary);
+    box-shadow: 0 0 0 0 transparent;
+  }
+  3%, 10% {
+    background: var(--primary);
+    color: var(--on-primary);
+    box-shadow: 0 0 0 5px color-mix(in oklch, var(--primary) 16%, transparent);
+  }
+}
+.flow-dot {
+  opacity: 0;
+  animation: lumFlowDot 8s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 1.1s + 0.35s);
+}
+@keyframes lumFlowDot {
+  0% { top: 0; opacity: 0; }
+  1% { opacity: 1; }
+  7.5% { top: 100%; opacity: 1; }
+  9%, 100% { top: 100%; opacity: 0; }
+}
+.flow-branch {
+  animation: lumFlowBranch 8s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 1.1s + 0.25s);
+}
+@keyframes lumFlowBranch {
+  0%, 18%, 100% { border-color: var(--crisis-line); box-shadow: 0 0 0 0 transparent; }
+  4%, 12% {
+    border-color: var(--critical);
+    box-shadow: 0 0 0 4px color-mix(in oklch, var(--critical) 10%, transparent);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .orb-anim,
-  .dot {
+  .dot,
+  .flow-node,
+  .flow-dot,
+  .flow-branch {
     animation: none;
   }
 }

@@ -83,6 +83,7 @@ export default function App() {
   const [notice, setNotice] = useState(null); // {kind: "error" | "info", text}
   const [genz, setGenz] = useState(() => readPref("lumina.genz", false));
   const [inspectorOpen, setInspectorOpen] = useState(() => window.innerWidth >= 1280);
+  const inspectorShown = mode === "desk" || inspectorOpen; // always on for desktop (for now); a drawer on smaller screens
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [openSession, setOpenSession] = useState(null);
   const [selIdx, setSelIdx] = useState(null);
@@ -157,7 +158,7 @@ export default function App() {
         { role: "user", text, analysis: res.analysis },
         { role: "assistant", text: res.reply, analysis: res.analysis, resources: res.resources, support: res.support },
       ]);
-      if (inspectorOpen) setSelIdx(messages.length + 1); // index of the reply just added
+      if (inspectorShown) setSelIdx(messages.length + 1); // index of the reply just added
     } catch (e) {
       setMessages((m) => m.slice(0, -1));
       setInput(text);
@@ -299,16 +300,18 @@ export default function App() {
             <button onClick={() => setBreatheOpen(true)} className={btnOutline}>
               Breathe
             </button>
-            <button
-              onClick={() => {
-                setInspectorOpen(!inspectorOpen);
-                setSessionsOpen(false);
-              }}
-              aria-pressed={inspectorOpen}
-              className={inspectorOpen ? `${btn} border border-primary bg-primary text-on-primary` : btnOutline}
-            >
-              Under the hood
-            </button>
+            {mode !== "desk" && (
+              <button
+                onClick={() => {
+                  setInspectorOpen(!inspectorOpen);
+                  setSessionsOpen(false);
+                }}
+                aria-pressed={inspectorOpen}
+                className={inspectorOpen ? `${btn} border border-primary bg-primary text-on-primary` : btnOutline}
+              >
+                Under the hood
+              </button>
+            )}
           </div>
         </header>
 
@@ -356,7 +359,7 @@ export default function App() {
                       </div>
                     );
                   const meta = m.analysis && (
-                    <Meta analysis={m.analysis} selected={selIdx === i && inspectorOpen} onClick={() => inspect(i)} />
+                    <Meta analysis={m.analysis} selected={selIdx === i && inspectorShown} onClick={() => inspect(i)} />
                   );
                   if (m.resources)
                     return (
@@ -473,16 +476,18 @@ export default function App() {
         <div onClick={() => setInspectorOpen(false)} className="fixed inset-0 z-[39] bg-scrim" />
       )}
 
-      {inspectorOpen && (
+      {inspectorShown && (
         <aside
           aria-label="Under the hood"
           className={`${mode === "desk" ? "relative w-[380px]" : mode === "tab" ? "fixed top-0 right-0 bottom-0 w-[420px]" : "fixed inset-0 w-full"} z-[45] flex h-full flex-none flex-col border-l border-line bg-surface`}
         >
           <div className="flex h-[60px] flex-none items-center justify-between gap-3 pr-4 pl-6">
             <h2 className="m-0 font-display text-base font-normal tracking-[-0.01em]">Under the hood</h2>
-            <button onClick={() => setInspectorOpen(false)} className={btnOutline}>
-              Close
-            </button>
+            {mode !== "desk" && (
+              <button onClick={() => setInspectorOpen(false)} className={btnOutline}>
+                Close
+              </button>
+            )}
           </div>
           <div className="flex-1 overflow-y-auto p-6">
             {sel ? (
@@ -763,6 +768,76 @@ function Pipeline({ analysis, userText, points, selIdx, mlTrained }) {
   );
 }
 
+const FLOW = [
+  ["Safety rules", "Checks for risk phrases, slang, misspellings and what was said just before."],
+  ["ML perception", "The trained model reads emotion, intensity and risk."],
+  ["Safety decision", "The stricter of the rules and the model wins."],
+  ["Memory", "Finds notes from past sessions that relate to this message."],
+  ["Reply", "Gemini writes the reply. Any phone number it invents is removed."],
+];
+
+// The per-message pipeline (same spine as <Step>) with a pulse running down it. Motion lives in index.css (.flow-*).
+function Flow() {
+  return (
+    <ol aria-label="How a message moves through Lumina" className="mt-6 mb-0 flex list-none flex-col p-0">
+      <li className="grid grid-cols-[28px_minmax(0,1fr)] gap-x-3.5">
+        <div className="flex flex-col items-center">
+          <span className="mt-2.5 h-2.5 w-2.5 flex-none rounded-full bg-primary" />
+          <FlowSeg i={0} />
+        </div>
+        <div className="pb-5">
+          <span className="inline-block rounded-[14px_14px_4px_14px] bg-primary px-3 py-1.5 text-[13px] font-medium text-on-primary">
+            Your message
+          </span>
+        </div>
+      </li>
+      {FLOW.map(([title, text], k) => {
+        const n = k + 1;
+        const last = n === FLOW.length;
+        return (
+          <li key={n} className="grid grid-cols-[28px_minmax(0,1fr)] gap-x-3.5">
+            <div className="flex flex-col items-center">
+              <span
+                className="flow-node flex h-7 w-7 flex-none items-center justify-center rounded-full bg-primary/12 text-[12.5px] font-semibold text-primary"
+                style={{ "--i": n }}
+              >
+                {n}
+              </span>
+              {!last && <FlowSeg i={n} />}
+            </div>
+            <div className={`flex flex-col gap-1.5 pt-[3px] ${last ? "" : "pb-5"}`}>
+              <h4 className="m-0 text-sm font-semibold">{title}</h4>
+              <p className={`m-0 text-pretty ${small}`}>{text}</p>
+              {n === 3 && (
+                <div
+                  className="flow-branch mt-1.5 flex flex-col gap-2 rounded-[14px] border border-crisis-line bg-crisis-bg px-3.5 py-3"
+                  style={{ "--i": n }}
+                >
+                  <Badge level="critical" />
+                  <p className={`m-0 text-pretty ${small}`}>
+                    Lumina shows a fixed crisis card with helplines and stops here. Memory and Gemini are skipped.
+                  </p>
+                </div>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function FlowSeg({ i }) {
+  return (
+    <span aria-hidden className="relative my-1 w-px flex-1 bg-line">
+      <span
+        className="flow-dot absolute left-1/2 h-[7px] w-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary"
+        style={{ "--i": i }}
+      />
+    </span>
+  );
+}
+
 function Intro({ status }) {
   const rows = [
     {
@@ -779,10 +854,10 @@ function Intro({ status }) {
   return (
     <>
       <p className="m-0 font-serif text-[17px] leading-[1.55] text-pretty text-ink">
-        Every reply passes through five steps: safety rules, an ML read of emotion and risk, a safety decision, memory of
-        past sessions, then the reply itself.
+        Every message you send passes through these five steps.
       </p>
-      <p className="mt-3.5 mb-0 text-sm leading-normal text-pretty text-muted">
+      <Flow />
+      <p className="mt-6 mb-0 text-sm leading-normal text-pretty text-muted">
         Choose “see how Lumina read this” under any reply to walk through it.
       </p>
       <h3 className="mt-7 mb-3 text-sm font-semibold">System status</h3>
