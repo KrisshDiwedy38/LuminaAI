@@ -84,7 +84,11 @@ def run_pipeline(sid, text, genz):
     signals = None
     if analyzer:
         try:
-            signals = analyzer.predict(text)
+            s = analyzer.predict(text)
+            if rule["ml_text"] != text:  # denial removed: risk is judged on what's left, if anything
+                rest = analyzer.predict(rule["ml_text"]) if rule["ml_text"] else {}
+                s.update(risk=rest.get("risk"), risk_confidence=rest.get("risk_confidence"), risk_text=rule["ml_text"])
+            signals = s  # only once complete: a crash above must not leave the full-text risk in place
         except Exception:  # a model failure must never block the rule gate
             traceback.print_exc()
     level = safety.decide(rule["level"], signals and signals["risk"], signals["risk_confidence"] if signals else 1.0)

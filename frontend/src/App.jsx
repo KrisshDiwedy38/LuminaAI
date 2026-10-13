@@ -675,8 +675,17 @@ function Pipeline({ analysis, userText, points, selIdx, mlTrained }) {
               </dd>
               <dt className="text-muted">Risk</dt>
               <dd className="m-0 text-ink">
-                {LV[ml.risk].label} <span className="text-muted">· {pct(ml.risk_confidence)}</span>
+                {ml.risk ? (
+                  <>
+                    {LV[ml.risk].label} <span className="text-muted">· {pct(ml.risk_confidence)}</span>
+                  </>
+                ) : (
+                  <span className="text-muted">Not used: the message was only a denial, so the rules decide</span>
+                )}
               </dd>
+              {ml.risk_text ? (
+                <dd className={`col-span-2 m-0 ${small}`}>Risk read with the denial removed: “{ml.risk_text}”</dd>
+              ) : null}
             </dl>
           ) : (
             <p className={`m-0 ${small}`}>Model not trained yet. Safety rules decide this message as is.</p>

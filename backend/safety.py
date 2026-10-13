@@ -120,10 +120,12 @@ def normalize(text):
 
 
 def check(text, recent=()):
-    """Return {"level": safe|caution|critical, "matches": [phrases that fired]}.
-    recent: the user's previous messages in this session, newest first."""
+    """Return {"level": safe|caution|critical, "matches": [phrases that fired], "ml_text": ...}.
+    recent: the user's previous messages in this session, newest first.
+    ml_text is what the ML risk head should judge: the message itself, or after a denial the rest of it
+    ("" when nothing meaningful is left), so "i dont wanna die" can't reach the model as "wanna die"."""
     norm = normalize(text)
-    matches, level = [], SAFE
+    matches, level, ml_text = [], SAFE, text
 
     negated = [m.group() for rx in _NEG for m in rx.finditer(norm)]
     for rx in _NEG:
@@ -131,6 +133,8 @@ def check(text, recent=()):
     if negated:
         level = CAUTION
         matches += [f"denial: {n}" for n in negated]
+        rest = " ".join(norm.split())
+        ml_text = rest if len(rest.split()) >= 2 else ""  # "i" or "im" alone carries no signal
 
     crit = [m.group().strip() for _, rx in _CRIT if (m := rx.search(norm))]
     crit += [f"{w} (spelled like {k})" for w in norm.split() if len(w) >= FUZZY_MIN_LEN
@@ -142,12 +146,12 @@ def check(text, recent=()):
         if topic:
             crit = [f"{follow} (right after: “{topic[:60]}”)"]
     if crit:
-        return {"level": CRITICAL, "matches": matches + crit}
+        return {"level": CRITICAL, "matches": matches + crit, "ml_text": ml_text}
 
     caut = [m.group().strip() for _, rx in _CAUT if (m := rx.search(norm))]
     if caut:
         level = CAUTION
-    return {"level": level, "matches": matches + caut}
+    return {"level": level, "matches": matches + caut, "ml_text": ml_text}
 
 
 # The model alone needs this confidence to send a message to the crisis path. Below it, a model-only

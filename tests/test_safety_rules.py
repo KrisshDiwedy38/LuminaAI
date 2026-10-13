@@ -157,6 +157,13 @@ def test_decide_takes_the_stricter_level():
     assert decide(CAUTION, SAFE) == CAUTION
 
 
+def test_denial_is_removed_before_the_model_reads_risk():
+    assert check("i dont wanna die")["ml_text"] == ""  # nothing left: rules alone decide
+    assert check("I'm not suicidal")["ml_text"] == ""
+    assert check("im not suicidal, i just wont be here tomorrow")["ml_text"] == "im i just wont be here tomorrow"
+    assert check("exams are killing me")["ml_text"] == "exams are killing me"  # no denial: untouched
+
+
 def test_unsure_model_alone_cannot_trigger_crisis():
     # first trained model: "i am okay" -> critical 0.73
     assert decide(SAFE, CRITICAL, 0.73) == CAUTION  # check-in + helplines, never SAFE

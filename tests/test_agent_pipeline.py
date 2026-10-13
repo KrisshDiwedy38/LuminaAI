@@ -68,6 +68,35 @@ def test_unsure_ml_critical_becomes_caution_check_in(monkeypatch):
     assert a["level"] == safety.CAUTION and reply != safety.CRISIS_MESSAGE and a["support"]
 
 
+class WordModel(FakeModel):
+    """Critical (0.99) whenever the text it is given says "die" or "wont be here", else safe."""
+
+    def predict(self, text):
+        out = super().predict(text)
+        if "die" in text or "wont be here" in text:
+            out.update(risk="critical", risk_confidence=0.99)
+        return out
+
+
+def test_denial_cannot_reach_the_model_as_wanna_die(monkeypatch):
+    # real trained model: "i dont wanna die" -> critical 0.99
+    monkeypatch.setattr(lumina, "analyzer", WordModel())
+    monkeypatch.setattr(lumina, "memory", Recorder(search=[]))
+    monkeypatch.setattr(lumina, "llm", Recorder(reply="I'm really glad you said that. What's been going on?"))
+    reply, a = lumina.run_pipeline(1, "i dont wanna die", genz=False)
+    assert a["level"] == safety.CAUTION and reply != safety.CRISIS_MESSAGE
+    assert a["ml"]["risk"] is None and a["ml"]["emotion"] == "sadness"  # emotion still read from the full text
+
+
+def test_denial_does_not_hide_what_follows_it(monkeypatch):
+    monkeypatch.setattr(lumina, "analyzer", WordModel())
+    monkeypatch.setattr(lumina, "memory", Forbidden())
+    monkeypatch.setattr(lumina, "llm", Forbidden())
+    reply, a = lumina.run_pipeline(1, "im not suicidal, i just won't be here tomorrow", genz=False)
+    assert a["rule"]["level"] == safety.CAUTION and a["level"] == safety.CRITICAL
+    assert reply == safety.CRISIS_MESSAGE
+
+
 def test_ml_cannot_downgrade_rule_gate(monkeypatch):
     monkeypatch.setattr(lumina, "analyzer", FakeModel(risk="safe"))
     monkeypatch.setattr(lumina, "llm", Forbidden())
