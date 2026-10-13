@@ -8,3 +8,5 @@ models/
 data/*
 !data/example.csv
 CLAUDE.md
+PROJECT_EXPLAINED.txt
+Lumina.dc.html

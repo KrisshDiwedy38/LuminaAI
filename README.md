@@ -66,7 +66,7 @@ No GPU? Run `train.py` on Google Colab (GPU runtime), then copy the `models/lumi
 | `backend/memory.py` | ChromaDB store of de-identified session notes |
 | `backend/llm.py` | Gemini reply prompt and modes, de-identified summaries, model fallback |
 | `backend/app.py` | FastAPI pipeline + SQLite sessions; serves `frontend/dist` |
-| `frontend/src/App.jsx` | The whole UI, built from the design in `Lumina.dc.html` |
+| `frontend/src/App.jsx` | The whole UI |
 | `tests/` | Safety rule tests and pipeline / API tests |
 
 Privacy: when a session ends, its transcript is deleted. Only a de-identified note (for memory) and mood stats remain, locally.
