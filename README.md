@@ -11,7 +11,7 @@ CRITICAL: fixed crisis card with verified helplines, everything else skipped · 
 copy .env.example .env                  # then paste your GEMINI_API_KEY into .env (free: aistudio.google.com/apikey)
 .venv\Scripts\activate                  # first time: python -m venv .venv; pip install -r requirements.txt
 cd frontend; npm install; npm run build; cd ..
-uvicorn backend.app:app                 # open http://localhost:8000
+uvicorn backend.app:app                 # opens http://localhost:8000 in your browser
 ```
 
 After changing anything in `frontend/`, run `npm run build` again and refresh. Hot reload while editing:

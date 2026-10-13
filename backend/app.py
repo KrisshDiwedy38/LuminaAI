@@ -4,9 +4,15 @@
 """
 import json
 import os
+import socket
 import sqlite3
+import sys
+import threading
+import time
 import traceback
+import webbrowser
 from collections import Counter
+from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 
@@ -50,7 +56,31 @@ def init_db():
 
 init_db()
 
-app = FastAPI(title="Lumina")
+def open_browser():
+    """Open the app in the browser once the server accepts connections.
+    ponytail: reads the port from `--port N` only, and --reload reopens a tab on every reload."""
+    port = int(sys.argv[sys.argv.index("--port") + 1]) if "--port" in sys.argv else 8000
+
+    def wait_then_open():
+        for _ in range(100):
+            try:
+                socket.create_connection(("127.0.0.1", port), timeout=0.2).close()
+                webbrowser.open(f"http://localhost:{port}")
+                return
+            except OSError:
+                time.sleep(0.2)
+
+    threading.Thread(target=wait_then_open, daemon=True).start()
+
+
+@asynccontextmanager
+async def lifespan(app):
+    if not os.getenv("LUMINA_NO_BROWSER"):  # set it for headless checks and scripted runs
+        open_browser()
+    yield
+
+
+app = FastAPI(title="Lumina", lifespan=lifespan)
 
 
 def now():
