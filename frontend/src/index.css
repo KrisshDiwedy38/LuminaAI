@@ -2,11 +2,12 @@
 
 /* Tokens from Lumina.dc.html */
 :root {
+  color-scheme: light;
   --bg: #f9f8f5;
-  --bg-2: #f5f4f1;
+  --bg-2: #f3f1ec;
   --surface: #ffffff;
   --surface-muted: #faf9f7;
-  --border: #e6e4df;
+  --border: #eceae4;
   --border-strong: #2d5546;
   --primary: #2d5546;
   --primary-hover: #24473a;
@@ -30,35 +31,35 @@
   --scrim: rgba(20, 22, 20, 0.32);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121412;
-    --bg-2: #161816;
-    --surface: #1b1e1c;
-    --surface-muted: #181a19;
-    --border: #2b302d;
-    --border-strong: #9cc3ae;
-    --primary: #9cc3ae;
-    --primary-hover: #b3d3c2;
-    --on-primary: #0f1f18;
-    --text: #edece7;
-    --body: #d2d1cb;
-    --muted: #a6a69f;
-    --icon: #7e857f;
-    --focus: #b7d6c6;
-    --safe: #86bcd2;
-    --safe-bg: #1a2a30;
-    --caution: #ddb969;
-    --caution-bg: #2c2618;
-    --critical: #ee9585;
-    --critical-bg: #321e1b;
-    --crisis-bg: #211c17;
-    --crisis-line: #4a3029;
-    --orb-a: #e9cfa4;
-    --orb-b: #7fa594;
-    --orb-c: #2f5546;
-    --scrim: rgba(0, 0, 0, 0.55);
-  }
+/* Light is the default; dark is opt-in with ?theme=dark (set in main.jsx). */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121412;
+  --bg-2: #161816;
+  --surface: #1b1e1c;
+  --surface-muted: #181a19;
+  --border: #2b302d;
+  --border-strong: #9cc3ae;
+  --primary: #9cc3ae;
+  --primary-hover: #b3d3c2;
+  --on-primary: #0f1f18;
+  --text: #edece7;
+  --body: #d2d1cb;
+  --muted: #a6a69f;
+  --icon: #7e857f;
+  --focus: #b7d6c6;
+  --safe: #86bcd2;
+  --safe-bg: #1a2a30;
+  --caution: #ddb969;
+  --caution-bg: #2c2618;
+  --critical: #ee9585;
+  --critical-bg: #321e1b;
+  --crisis-bg: #211c17;
+  --crisis-line: #4a3029;
+  --orb-a: #e9cfa4;
+  --orb-b: #7fa594;
+  --orb-c: #2f5546;
+  --scrim: rgba(0, 0, 0, 0.55);
 }
 
 @theme inline {

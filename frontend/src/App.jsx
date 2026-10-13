@@ -29,7 +29,7 @@ const REPLY_SOURCE = {
   checkin: "Follows a crisis message, so Lumina first checks they're okay to continue. Written by Gemini.",
 };
 
-const btn = "min-h-10 rounded-xs px-3.5 text-sm font-semibold";
+const btn = "min-h-10 rounded-full px-3.5 text-sm font-semibold";
 const btnOutline = `${btn} border border-line bg-surface text-ink hover:border-line-strong`;
 const btnPrimary = `${btn} bg-primary text-on-primary hover:bg-primary-hover`;
 const serifBody = "font-serif text-[19px] leading-[1.55] text-ink text-pretty whitespace-pre-wrap";
@@ -216,7 +216,7 @@ export default function App() {
           aria-label="Past sessions"
           className={`${isMob ? "fixed inset-0 w-full" : "relative w-72"} z-40 flex h-full flex-none flex-col border-r border-line bg-bg-2`}
         >
-          <div className="flex h-[60px] flex-none items-center justify-between border-b border-line px-5">
+          <div className="flex h-[60px] flex-none items-center justify-between px-5">
             <div className="flex items-center gap-2.5">
               <Orb size={28} />
               <span className="font-display text-lg tracking-[-0.01em]">Lumina</span>
@@ -235,16 +235,16 @@ export default function App() {
           <h2 className="px-5 pb-2 text-[13px] font-semibold text-muted">Past sessions</h2>
           <div className="flex-1 overflow-y-auto px-3 pb-4">
             {ended.length ? (
-              <ul>
+              <ul className="flex flex-col gap-1">
                 {ended.map((s) => {
                   const open = openSession === s.id;
                   const level = s.stats?.highest_level || "safe";
                   return (
-                    <li key={s.id} className="border-b border-line">
+                    <li key={s.id}>
                       <button
                         onClick={() => setOpenSession(open ? null : s.id)}
                         aria-expanded={open}
-                        className="flex w-full items-center gap-3 px-2 py-3.5 text-left text-ink"
+                        className="flex w-full items-center gap-3 rounded-[14px] px-2 py-3.5 text-left text-ink hover:bg-surface"
                       >
                         <Marker level={level} size={8} />
                         <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
@@ -272,14 +272,14 @@ export default function App() {
               </p>
             )}
           </div>
-          <p className="flex-none border-t border-line px-5 pt-4 pb-[18px] text-xs leading-normal text-pretty text-muted">
+          <p className="flex-none px-5 pt-4 pb-[18px] text-xs leading-normal text-pretty text-muted">
             Transcripts are deleted when a session ends. Only a de-identified note and mood stats are kept.
           </p>
         </aside>
       )}
 
       <main className="flex h-full min-w-0 flex-1 flex-col bg-bg">
-        <header className="flex min-h-[60px] flex-none flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-line px-4 py-2.5">
+        <header className="flex min-h-[60px] flex-none flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2.5">
           <div className="flex items-center gap-2">
             {isMob && (
               <button onClick={() => setSessionsOpen(true)} className={btnOutline}>
@@ -335,7 +335,7 @@ export default function App() {
                     <button
                       key={s}
                       onClick={() => send(s)}
-                      className="flex min-h-[52px] items-center justify-between gap-3 rounded-xs border border-line bg-surface-muted px-4 text-left text-[14.5px] font-semibold text-body hover:border-line-strong hover:bg-surface hover:text-primary"
+                      className="flex min-h-[52px] items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 text-left text-[14.5px] font-semibold text-body shadow-[0_1px_2px_rgba(40,50,44,.04)] hover:border-line-strong hover:text-primary"
                     >
                       <span>{s}</span>
                       <span aria-hidden className="text-icon">
@@ -397,7 +397,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="flex-none border-t border-line bg-bg px-4 pt-3 pb-3.5">
+        <div className="flex-none bg-bg px-4 pt-3 pb-3.5">
           <div className="mx-auto flex max-w-[680px] flex-col gap-2.5">
             {notice && (
               <div
@@ -419,7 +419,7 @@ export default function App() {
                 </button>
               </div>
             )}
-            <div className="flex flex-col rounded-xs border border-line bg-surface focus-within:border-line-strong focus-within:shadow-[0_0_0_1px_var(--border-strong)]">
+            <div className="flex flex-col rounded-3xl border border-line bg-surface shadow-[0_6px_24px_rgba(40,50,44,.07)] focus-within:border-primary focus-within:shadow-[0_6px_24px_rgba(40,50,44,.07),0_0_0_3px_color-mix(in_oklch,var(--primary)_18%,transparent)]">
               <label htmlFor="lum-input" className="sr-only">
                 Message Lumina
               </label>
@@ -479,7 +479,7 @@ export default function App() {
           aria-label="Under the hood"
           className={`${mode === "desk" ? "relative w-[380px]" : mode === "tab" ? "fixed top-0 right-0 bottom-0 w-[420px]" : "fixed inset-0 w-full"} z-[45] flex h-full flex-none flex-col border-l border-line bg-surface`}
         >
-          <div className="flex h-[60px] flex-none items-center justify-between gap-3 border-b border-line pr-4 pl-6">
+          <div className="flex h-[60px] flex-none items-center justify-between gap-3 pr-4 pl-6">
             <h2 className="m-0 font-display text-base font-normal tracking-[-0.01em]">Under the hood</h2>
             <button onClick={() => setInspectorOpen(false)} className={btnOutline}>
               Close
@@ -534,7 +534,7 @@ function Badge({ level }) {
   const l = LV[level];
   return (
     <span
-      className="inline-flex items-center gap-[7px] self-start rounded-xs px-2.5 py-1 text-[12.5px] font-semibold"
+      className="inline-flex items-center gap-[7px] self-start rounded-full px-2.5 py-1 text-[12.5px] font-semibold"
       style={{ background: l.bg, color: l.color }}
     >
       <Marker level={level} />
@@ -563,7 +563,7 @@ function CrisisCard({ text, resources }) {
   return (
     <section
       aria-label="Reach a real person now"
-      className="flex flex-col gap-5 rounded-[4px] border border-critical bg-crisis-bg px-[22px] py-6"
+      className="flex flex-col gap-5 rounded-3xl border border-crisis-line bg-crisis-bg px-[22px] py-6 shadow-[0_8px_30px_rgba(162,70,58,.08)]"
     >
       <Badge level="critical" />
       {text.split("\n\n").map((p, i) => (
@@ -628,7 +628,7 @@ function Step({ n, title, last, children }) {
   return (
     <li className="grid grid-cols-[28px_minmax(0,1fr)] gap-x-3.5">
       <div className="flex flex-col items-center">
-        <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full border border-line-strong text-[12.5px] font-semibold text-primary">
+        <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-primary/12 text-[12.5px] font-semibold text-primary">
           {n}
         </span>
         {!last && <span className="my-1 w-px flex-1 bg-line" />}
@@ -647,7 +647,7 @@ function Pipeline({ analysis, userText, points, selIdx, mlTrained }) {
   return (
     <>
       <p className="mb-2 text-[13px] text-muted">How Lumina read this message</p>
-      <p className="m-0 bg-bg-2 px-3.5 py-3 text-sm leading-normal [overflow-wrap:anywhere] text-body">“{userText}”</p>
+      <p className="m-0 rounded-[14px] bg-bg-2 px-3.5 py-3 text-sm leading-normal [overflow-wrap:anywhere] text-body">“{userText}”</p>
       <ol className="mt-7 flex flex-col">
         <Step n={1} title="Safety rules">
           <Badge level={rule.level} />
@@ -667,7 +667,7 @@ function Pipeline({ analysis, userText, points, selIdx, mlTrained }) {
                 <span
                   role="img"
                   aria-label={`Intensity ${ml.intensity.toFixed(2)} of 1`}
-                  className="block h-1.5 flex-1 border border-line bg-bg-2"
+                  className="block h-2 flex-1 overflow-hidden rounded-full bg-bg-2"
                 >
                   <span className="block h-full bg-primary" style={{ width: pct(ml.intensity) }} />
                 </span>
@@ -704,7 +704,7 @@ function Pipeline({ analysis, userText, points, selIdx, mlTrained }) {
         <Step n={4} title="Memory">
           {memory.length ? (
             memory.map((m, i) => (
-              <figure key={i} className="m-0 bg-bg-2 px-3.5 py-3">
+              <figure key={i} className="m-0 rounded-[14px] bg-bg-2 px-3.5 py-3">
                 <blockquote className="m-0 font-serif text-[15.5px] leading-normal text-ink italic">“{m.summary}”</blockquote>
                 <figcaption className="mt-2 text-xs text-muted tabular-nums">
                   {fmtDate(m.date)} · similarity {(1 - m.distance).toFixed(2)}
@@ -727,7 +727,7 @@ function Pipeline({ analysis, userText, points, selIdx, mlTrained }) {
           )}
         </Step>
       </ol>
-      <div className="mt-7 border-t border-line pt-5">
+      <div className="mt-7 rounded-[18px] bg-bg-2 p-5">
         <h3 className="mt-0 mb-3.5 text-sm font-semibold">Intensity this session</h3>
         {mlTrained && points.length >= 2 ? (
           <>
@@ -744,6 +744,7 @@ function Pipeline({ analysis, userText, points, selIdx, mlTrained }) {
                     height: Math.round(m.analysis.ml.intensity * 60 + 6),
                     background: LV[m.analysis.level].color,
                     opacity: i === selIdx ? 1 : 0.55,
+                    borderRadius: "6px 6px 2px 2px",
                   }}
                 />
               ))}
