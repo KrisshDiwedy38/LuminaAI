@@ -108,13 +108,12 @@ export default function App() {
     (async () => {
       try {
         setStatus(await api("/status"));
-        const open = (await refreshSessions()).find((s) => !s.ended_at);
-        if (open) {
-          const msgs = await api(`/sessions/${open.id}/messages`);
-          setSessionId(open.id);
-          setMessages(msgs);
-          const last = msgs.findLastIndex((m) => m.role === "assistant");
-          setSelIdx(last >= 0 ? last : null);
+        // A session left open when Lumina was closed is ended now: note kept, transcript deleted, back to the start.
+        const open = (await refreshSessions()).filter((s) => !s.ended_at);
+        if (open.length) {
+          await Promise.all(open.map((s) => api(`/sessions/${s.id}/end`, { method: "POST" })));
+          await refreshSessions();
+          setNotice({ kind: "info", text: "Your last session was ended when Lumina closed, and its transcript was deleted." });
         }
       } catch {
         setNotice({ kind: "error", text: OFFLINE });
