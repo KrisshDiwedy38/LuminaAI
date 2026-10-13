@@ -143,7 +143,10 @@ def run_pipeline(sid, text, genz):
     cleaned = safety.strip_unverified_numbers(reply)
     analysis["stripped"] = cleaned != reply.strip()
     reply = cleaned or llm.FALLBACK
-    analysis["support"] = safety.needs_support(level, reply)
+    shown = [json.loads(r["analysis"] or "{}") for r in
+             q("SELECT analysis FROM messages WHERE session_id = ? AND role = 'assistant'", sid)]
+    shown_before = any(a.get("support") or a.get("level") == safety.CRITICAL for a in shown)
+    analysis["support"] = safety.needs_support(rule["level"], signals and signals["risk"], reply, shown_before)
     return reply, analysis
 
 

@@ -68,6 +68,25 @@ def test_unsure_ml_critical_becomes_caution_check_in(monkeypatch):
     assert a["level"] == safety.CAUTION and reply != safety.CRISIS_MESSAGE and a["support"]
 
 
+def test_model_only_caution_gets_no_helplines(monkeypatch):
+    monkeypatch.setattr(lumina, "analyzer", FakeModel(risk="caution", confidence=0.67))
+    monkeypatch.setattr(lumina, "memory", Recorder(search=[]))
+    monkeypatch.setattr(lumina, "llm", Recorder(reply="Oh, dead battery mode. The worst kind."))
+    _, a = lumina.run_pipeline(1, "too tired to move", genz=False)
+    assert a["level"] == safety.CAUTION and not a["support"]
+
+
+def test_helplines_shown_once_per_session(monkeypatch):
+    monkeypatch.setattr(lumina, "memory", Recorder(search=[]))
+    monkeypatch.setattr(lumina, "llm", Recorder(reply="That sounds really heavy. What's been going on?"))
+    c = TestClient(lumina.app)
+    sid = c.post("/api/sessions").json()["id"]
+    first = c.post(f"/api/sessions/{sid}/messages", json={"text": "i hate myself"}).json()
+    second = c.post(f"/api/sessions/{sid}/messages", json={"text": "i feel so worthless"}).json()
+    assert first["analysis"]["level"] == second["analysis"]["level"] == safety.CAUTION
+    assert "support" in first and "support" not in second
+
+
 class WordModel(FakeModel):
     """Critical (0.99) whenever the text it is given says "die" or "wont be here", else safe."""
 

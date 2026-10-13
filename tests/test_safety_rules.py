@@ -139,10 +139,16 @@ def test_verified_helplines_and_ordinary_numbers_stay():
     assert strip_unverified_numbers(reply) == reply
 
 
-def test_support_shown_on_caution_or_when_reply_talks_safety():
-    assert needs_support(CAUTION, "That sounds heavy.")
-    assert needs_support(SAFE, "I'm worried about you. Are you safe right now?")
-    assert not needs_support(SAFE, "Ah, physics. Which chapter is it?")
+def test_helplines_on_rule_caution_or_unsure_model_crisis_once_per_session():
+    assert needs_support(CAUTION, None, "That sounds heavy.")  # the rules flagged it
+    assert needs_support(SAFE, CRITICAL, "That sounds heavy.")  # model said crisis, below the bar
+    assert not needs_support(SAFE, CAUTION, "Oh, dead battery mode.")  # model-only caution: "too tired to move"
+    assert not needs_support(CAUTION, None, "That sounds heavy.", shown_before=True)  # once per session
+    assert not needs_support(SAFE, None, "Ah, physics. Which chapter is it?")
+
+
+def test_helplines_attached_whenever_the_reply_points_to_them():
+    assert needs_support(SAFE, None, "I'm worried about you. Verified helplines are just below.", shown_before=True)
 
 
 def test_matches_explain_the_decision():
@@ -167,6 +173,7 @@ def test_denial_is_removed_before_the_model_reads_risk():
 def test_unsure_model_alone_cannot_trigger_crisis():
     # first trained model: "i am okay" -> critical 0.73
     assert decide(SAFE, CRITICAL, 0.73) == CAUTION  # check-in + helplines, never SAFE
+    assert decide(SAFE, CRITICAL, 0.86) == CAUTION  # second model: "cant sleep again"
     assert decide(SAFE, CRITICAL, 0.95) == CRITICAL  # confident model still escalates alone
     assert decide(CRITICAL, CRITICAL, 0.5) == CRITICAL  # a rule hit never needs the model
     assert decide(CRITICAL, SAFE, 0.99) == CRITICAL

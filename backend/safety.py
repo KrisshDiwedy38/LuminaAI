@@ -155,9 +155,10 @@ def check(text, recent=()):
 
 
 # The model alone needs this confidence to send a message to the crisis path. Below it, a model-only
-# CRITICAL becomes CAUTION (check-in + helplines), never SAFE. The first trained model called
-# "i am okay" and "thanks" critical at ~0.73; clear crisis wording scores 0.95.
-ML_CRITICAL_MIN = 0.85
+# CRITICAL becomes CAUTION (check-in + helplines once), never SAFE. The first trained model called
+# "i am okay" and "thanks" critical at ~0.73, the second "cant sleep again" at 0.86; clear crisis
+# wording scores 0.95-0.98.
+ML_CRITICAL_MIN = 0.90
 
 
 def decide(rule_level, ml_risk=None, ml_confidence=1.0):
@@ -188,8 +189,7 @@ VERIFIED_NUMBERS = {re.sub(r"\D", "", n) for r in CRISIS_RESOURCES for n in r["n
 VERIFIED_SITES = {r["url"].split("//")[1] for r in CRISIS_RESOURCES if r.get("url")}
 _NUMBER = re.compile(r"\+?\d[\d -]*\d(?!\s*%)")
 _SITE = re.compile(r"\b(?:[\w-]+\.)+(?:com|org|net|in|gov|info|co|uk|us)\b", re.I)
-_SAFETY_TALK = re.compile(r"\b(helplines?|hotlines?|crisis|lifeline|emergency|are you safe|safe right now|"
-                          r"stay safe|keep (?:yourself )?safe)\b", re.I)
+_POINTS_TO_HELPLINES = re.compile(r"\b(helplines?|hotlines?|lifeline)\b", re.I)
 
 
 def strip_unverified_numbers(reply):
@@ -200,6 +200,11 @@ def strip_unverified_numbers(reply):
     return " ".join(s for s in re.split(r"(?<=[.!?])\s+", reply.strip()) if not unverified(s))
 
 
-def needs_support(level, reply):
-    """Attach the verified helplines to a non-crisis reply on CAUTION, or when the reply itself talks safety."""
-    return level == CAUTION or bool(_SAFETY_TALK.search(reply))
+def needs_support(rule_level, ml_risk, reply, shown_before=False):
+    """Attach the verified helplines under a non-crisis reply when the reply points to them (Gemini is told to
+    say they're below when it's worried), or once per session when the rules flagged CAUTION or the model said
+    CRITICAL without enough confidence for the crisis card. A model-only CAUTION never adds them: it flagged
+    everyday messages like "too tired to move". The footer under the message box always lists them anyway."""
+    if _POINTS_TO_HELPLINES.search(reply):
+        return True
+    return (rule_level == CAUTION or ml_risk == CRITICAL) and not shown_before

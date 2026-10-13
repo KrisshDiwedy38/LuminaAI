@@ -701,7 +701,7 @@ function Pipeline({ analysis, userText, points, selIdx, mlTrained }) {
             {crisis
               ? "Critical goes straight to the crisis path. The AI is skipped and fixed helpline text is shown."
               : ml?.risk === "critical" && level !== "critical"
-                ? "The model alone wasn't sure enough (needs 85%) to treat this as a crisis, so Lumina checks in gently and shows helplines instead."
+                ? "The model alone wasn't sure enough (needs 90%) to treat this as a crisis, so Lumina checks in gently instead."
                 : "The stricter of the rules and the model decides. The model can raise the level, never lower it."}
           </p>
         </Step>
