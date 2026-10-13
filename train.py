@@ -59,6 +59,13 @@ def split(df, seed):
     return parts
 
 
+def is_better(best, cr, score, max_cr, tol):
+    """Model selection. Critical recall first, but within `tol` (one validation crisis example) of the best
+    recall seen so far counts as a tie and the overall score decides. Comparing with the best ever seen
+    stops small drops adding up across epochs. best: (critical_recall, score) of the saved epoch, or None."""
+    return best is None or best[0] < max_cr - tol or (cr >= max_cr - tol and score > best[1])
+
+
 def batches(df, tok, emo_idx, size, max_len, shuffle=False):
     order = np.random.permutation(len(df)) if shuffle else np.arange(len(df))
     for i in range(0, len(df), size):
@@ -156,7 +163,9 @@ def main():
     risk_w = torch.tensor([len(train_df) / (3 * counts.get(r, 1)) for r in RISK_LABELS], dtype=torch.float, device=dev)
     ce_emotion, ce_risk, mse = nn.CrossEntropyLoss(), nn.CrossEntropyLoss(weight=risk_w), nn.MSELoss()
 
-    best_key = None
+    n_crit = int((val_df["risk"] == "critical").sum())
+    tol = (1 / n_crit if n_crit else 0.0) + 1e-9  # float slack: exactly one example must still tie
+    best, max_cr = None, 0.0
     for epoch in range(1, args.epochs + 1):
         model.train()
         total, n = 0.0, 0
@@ -176,10 +185,11 @@ def main():
         print(f"epoch {epoch}: loss={total / n:.4f} | val emotion_f1={val['emotion']['macro_f1']:.3f} "
               f"risk_f1={val['risk']['macro_f1']:.3f} critical_recall={'n/a' if cr is None else f'{cr:.3f}'} "
               f"intensity_mae={val['intensity']['mae']:.3f}")
-        # Safety first: critical recall, then emotion + risk F1, then intensity error.
-        key = (cr or 0.0, val["emotion"]["macro_f1"] + val["risk"]["macro_f1"] - val["intensity"]["mae"])
-        if best_key is None or key > best_key:
-            best_key = key
+        # Safety first: critical recall (one example of slack), then emotion + risk F1 - intensity error.
+        score = val["emotion"]["macro_f1"] + val["risk"]["macro_f1"] - val["intensity"]["mae"]
+        max_cr = max(max_cr, cr or 0.0)
+        if is_better(best, cr or 0.0, score, max_cr, tol):
+            best = (cr or 0.0, score)
             save(model, tok, emotions, args.out,
                  {"base_model": args.model, "max_len": args.max_len, "epoch": epoch, "val": val})
             print(f"  saved best model to {args.out}")
